@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfileModel } from './auth.service';
+import { UserProfileModel } from './../../auth.service';
 import { Grammar, GrammarDocument } from 'src/schemas/grammar.schema';
 import { AbstractService } from 'src/abstracts/service.abstract';
 import { GrammarRepository } from 'src/repositories/grammar.repository';
-import { TranslatorService } from './translator.service';
+import { TranslatorService } from './../../translator.service';
 import { Schema as MongooseSchema } from 'mongoose';
 
 @Injectable()

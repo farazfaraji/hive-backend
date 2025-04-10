@@ -5,9 +5,8 @@ import {
   WordUser,
   WordUserDocument,
 } from 'src/schemas/word-user.schema';
-import { UserProfileModel } from './auth.service';
+import { UserProfileModel } from './../../auth.service';
 import { AbstractService } from 'src/abstracts/service.abstract';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class WordUserService extends AbstractService<

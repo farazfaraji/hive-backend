@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { User } from 'src/decorators/user.decorator';
 import { UserProfileModel } from 'src/services/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { LessonService } from 'src/services/lesson.service';
+import { LessonService } from 'src/services/courses/language/lesson.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('v1/lesson')
@@ -25,6 +25,14 @@ export class LessonController {
     @Body() body: { answer: string },
   ) {
     return this.service.questionCorrection(user, body.answer);
+  }
+
+  @Post('/reading-correction')
+  async readingCorrection(
+    @User() user: UserProfileModel,
+    @Body() body: { answer: string },
+  ) {
+    return this.service.readingCorrection(user, body.answer);
   }
 
   @Post('/finish-lesson')

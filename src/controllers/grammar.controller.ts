@@ -3,7 +3,7 @@ import { User } from 'src/decorators/user.decorator';
 import { UserProfileModel } from 'src/services/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
-import { GrammarService } from 'src/services/grammar.service';
+import { GrammarService } from 'src/services/courses/language/grammar.service';
 @UseGuards(JwtAuthGuard)
 @Controller('v1/grammar')
 export class GrammarController {

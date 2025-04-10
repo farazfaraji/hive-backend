@@ -1,22 +1,25 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaBase } from 'src/abstracts/schema.abstract';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
+import {
+  Dialogue,
+  News,
+  NewWord,
+} from 'src/services/courses/language/lesson.service';
 export type ProgressDocument = HydratedDocument<Progress>;
 
 export interface Exam {
   plan: string;
-  question: {
-    text: string;
-    choices: {
-      question: string;
-      choices: string[];
-      answer: string;
-    }[];
-    simple: {
-      question: string;
-      answer: string;
-    }[];
-  };
+  text: string;
+  choices: {
+    question: string;
+    choices: string[];
+    answer: string;
+  }[];
+  simple: {
+    question: string;
+    answer: string;
+  }[];
 }
 
 export interface Definition {
@@ -26,19 +29,10 @@ export interface Definition {
 
 export interface Lesson {
   grammar: string | MongooseSchema.Types.ObjectId;
-  news: string;
-  dialogue: string;
-  words: {
-    word: string;
-    examples: string[];
-    context: string[];
-  }[];
-  exam: {
-    plan: string;
-    question: {
-      text: string;
-    };
-  };
+  news: News;
+  dialogue: Dialogue;
+  words: NewWord[];
+  exam: Exam;
 }
 
 @Schema({ collection: 'progresses' })

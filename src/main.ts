@@ -11,8 +11,12 @@ async function bootstrap() {
 
   app.enableCors();
 
-  // Use PORT from environment variable or default to 3000
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
+  // Get port from environment variable
+  const port = process.env.PORT || 3000; // App Engine uses port 8080 by default
+
+  // Listen on all network interfaces
+  await app.listen(port, '0.0.0.0');
+
+  console.log(`Application is running on: http://localhost:${port}`);
 }
 bootstrap();

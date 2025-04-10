@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import { Language } from 'src/schemas/word.schema';
 import { ConfigService } from '@nestjs/config';
+import {
+  Dialogue,
+  News,
+  NewWord,
+  GrammerQuestion,
+} from './courses/language/lesson.service';
 
 @Injectable()
 export class TranslatorService {
@@ -14,7 +20,7 @@ export class TranslatorService {
     });
   }
 
-  async sendPrompt(prompt: string) {
+  async sendPrompt<T>(prompt: string): Promise<T> {
     const response = await this.client.responses.create({
       model: 'gpt-4o',
       input: [
@@ -33,8 +39,7 @@ export class TranslatorService {
       temperature: 1,
       max_output_tokens: 2048,
     });
-    console.log(JSON.stringify(response, null, 4));
-    return JSON.parse(response.output_text);
+    return JSON.parse(response.output_text) as T;
   }
 
   async translate(
@@ -50,7 +55,8 @@ export class TranslatorService {
     contexts: string[];
   }> {
     return this.sendPrompt(
-      `You're a Language tutor.Language: ${targetLanguage}.Level: ${level}.Word: ${text}.Give a JSON:  {"example": "Simple daily sentence using the word.","meaning": "Meaning for ${level} learner.","translation": "Translation in ${language}.","synonyms": ["word1", "word2"],"contexts": ["context1", "context2"]}`,
+      `You're a Language tutor.Language: ${targetLanguage}.Level: ${level}.Word: ${text}.
+      Give a JSON:  {"example": "Simple daily sentence using the word.","meaning": "Meaning for ${level} learner.","translation": "Translation in ${language}.","synonyms": ["word1", "word2"],"contexts": ["context1", "context2"]}`,
     );
   }
 
@@ -59,10 +65,10 @@ export class TranslatorService {
     targetLanguage: string,
     grammer: string,
     interests: string[],
-  ) {
-    return this.sendPrompt(
+  ): Promise<News> {
+    return this.sendPrompt<News>(
       `You're a language tutor.Language: ${targetLanguage}.Level: ${level}.Grammar: ${grammer}.
-      I want you to give a recent news article that is related to the grammar in 2 paragraph.Im interested to ${interests.join(', ')}.
+      I want you to give a recent news article that is related to the grammar in 2-3 paragraph.Im interested to ${interests.join(', ')}.
       Give a JSON:{"news": "the news","explanation": "the details of the used grammer"}`,
     );
   }
@@ -72,9 +78,10 @@ export class TranslatorService {
     targetLanguage: string,
     grammer: string,
     interests: string[],
-  ) {
-    return this.sendPrompt(
-      `You're a language tutor.Language: ${targetLanguage}.Level: ${level}.interests:${interests.join(', ')}.Grammar: ${grammer}.Now ask a question to force me to use the grammer.Give a JSON:  {"question": "Question"}`,
+  ): Promise<GrammerQuestion> {
+    return this.sendPrompt<GrammerQuestion>(
+      `You're a language tutor.Language: ${targetLanguage}.Level: ${level}.interests:${interests.join(', ')}.
+      Grammar: ${grammer}.Now ask a question to force me to use the grammer.Give a JSON:  {"question": "Question"}`,
     );
   }
 
@@ -100,9 +107,11 @@ export class TranslatorService {
     targetLanguage: string,
     grammer: string,
     interests: string[],
-  ) {
-    return this.sendPrompt(
-      `You're a language tutor.Language: ${targetLanguage}.Level: ${level}.interests:${interests.join(', ')}.Grammar: ${grammer}.Now give me a daily dialogue with this grammer and my interests.Give a JSON:  {"dialogue": [{"firstPerson":"Name of the person, "sentence":"Sentence"}, {"secondPerson":"Name of the person, "sentence":"Sentence"}]}`,
+  ): Promise<Dialogue> {
+    return this.sendPrompt<Dialogue>(
+      `You're a language tutor.Language: ${targetLanguage}.Level: ${level}.interests:${interests.join(', ')}.
+      Grammar: ${grammer}.Now give me a daily dialogue with this grammer and my interests.
+      Give a JSON:  {"dialogue": [{"name":"Name of the first person, "sentence":"Sentence"}, {"name":"Name of the second person, "sentence":"Sentence"}]}`,
     );
   }
 
@@ -110,9 +119,11 @@ export class TranslatorService {
     level: string,
     targetLanguage: string,
     interests: string[],
-  ) {
-    return this.sendPrompt(
-      `You're a tutor.Language:${targetLanguage}, Level: ${level}.interests:${interests.join(',')}.Give me 3 useful word in the daily conversation with three examples and usable context.Give a JSON: [{"word": "Word","examples":["EXAMPLES"], context:["CONTEXT"]}`,
+  ): Promise<NewWord[]> {
+    return this.sendPrompt<NewWord[]>(
+      `You're a tutor.Language:${targetLanguage}, Level: ${level}.interests:${interests.join(',')}.
+      Give me 3 useful word in the daily conversation with three examples and usable context.
+      Give a JSON: [{"word": "Word","examples":["EXAMPLES"], context:["CONTEXT"]}`,
     );
   }
 
@@ -154,7 +165,6 @@ export class TranslatorService {
       max_output_tokens: 512,
     });
 
-    console.log(response.output_text);
     return JSON.parse(response.output_text);
   }
 

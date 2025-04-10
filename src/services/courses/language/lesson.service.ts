@@ -1,12 +1,36 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { UserProfileModel } from './auth.service';
+import { UserProfileModel } from '../../auth.service';
 import { GrammarService } from './grammar.service';
-import { TranslatorService } from './translator.service';
+import { TranslatorService } from '../../translator.service';
 import { ProgressService } from './progress.service';
 import { Grammar } from 'src/schemas/grammar.schema';
 import { Exam, Lesson } from 'src/schemas/progress.schema';
 import { v4 as uuidv4 } from 'uuid';
 import { Schema as MongooseSchema } from 'mongoose';
+
+export type CorrectionReading = {
+  advices: string[];
+  score: number;
+};
+
+export type News = {
+  news: string;
+  explanation: string;
+};
+
+export type Dialogue = {
+  dialogue: { name: string; sentence: string }[];
+};
+
+export type NewWord = {
+  word: string;
+  examples: string[];
+  context: string[];
+};
+
+export type GrammerQuestion = {
+  question: string;
+};
 
 @Injectable()
 export class LessonService {
@@ -37,25 +61,28 @@ export class LessonService {
       grammar.item,
       user.interests,
     );
+
     const dialogue = await this.translatorService.getShortDialogByGrammer(
       user.language,
       user.targetLanguage,
       grammar.item,
       user.interests,
     );
+
+    const exam = await this.getExam(user);
+
     const words = await this.translatorService.getSomeWords(
       user.language,
       user.targetLanguage,
       user.interests,
     );
-    const exam = await this.getExam(user);
 
     const lesson: Lesson = {
       grammar: grammar._id,
       news,
       dialogue,
-      words,
       exam,
+      words,
     };
 
     const isExist = await this.progressService.findOne({ user: user._id });
@@ -124,6 +151,23 @@ export class LessonService {
     return question;
   }
 
+  async readingCorrection(
+    user: UserProfileModel,
+    answer: string,
+  ): Promise<CorrectionReading> {
+    const progress = await this.progressService.findOne({ user: user._id });
+
+    const reading = progress.lesson.exam.text;
+
+    const prompt = `You're a language tutor.Language: ${user.targetLanguage}.Level: ${user.level}.
+    Imagine this you are a corrector for the ${user.exam} exam. correct my answer. give me some advices, and score it from 0 to 100.
+    This is reading: ${reading}
+    This is my answer: ${answer}
+    Give a JSON: {"advices": ["string"], "score": "number"}}`;
+
+    return this.translatorService.sendPrompt<CorrectionReading>(prompt);
+  }
+
   async questionCorrection(user: UserProfileModel, answer: string) {
     const progress = await this.progressService.findOne({ user: user._id });
     if (!progress) {
@@ -155,6 +199,37 @@ export class LessonService {
       );
     }
     return result;
+  }
+
+  async getExam(user: UserProfileModel): Promise<Exam> {
+    if (!user.exam) {
+      return null;
+    }
+
+    const progress = await this.progressService.findOne({ user: user._id });
+
+    if (progress?.exam) {
+      return progress.exam;
+    }
+
+    const plan = ['reading'];
+    const currentPlan = plan[Math.floor(Math.random() * plan.length)];
+    let prompt = '';
+    if (currentPlan === 'reading') {
+      prompt = `You're a language tutor.Language: ${user.targetLanguage}.Level: ${user.level}.
+      Exam:${user.exam}.I want you to give me a real sample for the exam in ${user.level} for ${currentPlan}.
+      5 choices questions and 5 true/false questions.
+      Give a JSON: {"text": "reading text","choices":
+      [{"question": "question", "choices": ["choice1", "choice2", "choice3", "choice4"],"answer":"answer"}],
+      "simple":[{"question":"true/false questions","answer":"answer"}]}`;
+    } else {
+      prompt = `You're a language tutor.Language: ${user.targetLanguage}.Level: ${user.level}.
+      Exam: ${user.exam}.I want you to give me a short sample for the exam in ${user.level} for writing.`;
+    }
+    const exam = await this.translatorService.sendPrompt<Exam>(prompt);
+    await this.progressService.updateOne({ user: user._id }, { exam: exam });
+
+    return { ...exam, plan: currentPlan };
   }
 
   async getNextLesson(user: UserProfileModel): Promise<Grammar> {
@@ -203,36 +278,5 @@ export class LessonService {
       },
     );
     return { status: 'success' };
-  }
-
-  async getExam(user: UserProfileModel): Promise<Exam> {
-    if (!user.exam) {
-      return null;
-    }
-
-    const progress = await this.progressService.findOne({ user: user._id });
-
-    if (progress?.exam) {
-      return progress.exam;
-    }
-
-    const plan = ['reading'];
-    const currentPlan = plan[Math.floor(Math.random() * plan.length)];
-    let prompt = '';
-    if (currentPlan === 'reading') {
-      prompt = `You're a language tutor.Language: ${user.targetLanguage}.Level: ${user.level}.
-      Exam: ${user.exam}.I want you to give me a short sample for the exam in ${user.level} for ${currentPlan}.
-      5 choices questions and 5 true/false questions.
-      Give a JSON: {"text": "reading text","choices":
-      [{"question": "question", "choices": ["choice1", "choice2", "choice3", "choice4"],"answer":"answer"}],
-      "simple":[{"question":"true/false questions","answer":"answer"}]}`;
-    } else {
-      prompt = `You're a language tutor.Language: ${user.targetLanguage}.Level: ${user.level}.
-      Exam: ${user.exam}.I want you to give me a short sample for the exam in ${user.level} for writing.`;
-    }
-    const exam = await this.translatorService.sendPrompt(prompt);
-    await this.progressService.updateOne({ user: user._id }, { exam: exam });
-
-    return { ...exam, plan: currentPlan };
   }
 }

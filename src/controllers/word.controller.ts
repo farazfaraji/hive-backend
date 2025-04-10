@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { WordService } from 'src/services/word.service';
+import { WordService } from 'src/services/courses/language/word.service';
 import { User } from 'src/decorators/user.decorator';
 import { UserProfileModel } from 'src/services/auth.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
