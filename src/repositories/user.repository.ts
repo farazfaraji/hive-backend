@@ -12,7 +12,7 @@ export class UserRepository implements RepositoryAbstract<UserDocument> {
     return this.model.findOne({ email });
   }
 
-  findUserById({ id }: { id: string }) {
+  async findUserById({ id }: { id: string }) {
     console.log('here' + id);
     const user = await this.model.findOne({ _id: id });
     console.log(user);
