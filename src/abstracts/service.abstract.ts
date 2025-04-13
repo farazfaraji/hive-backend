@@ -30,7 +30,6 @@ export class AbstractService<Schema, Document> {
     toObject = true,
   ): Promise<Document> {
     const data = await this.model.findOne(filter);
-    console.log(data);
     if (data && toObject) {
       return data.toObject();
     }

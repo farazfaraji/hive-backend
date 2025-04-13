@@ -31,14 +31,15 @@ export class TranslatorService {
               type: 'input_text',
               text:
                 prompt +
-                '.Response should be a raw JSON object without Markdown formatting or code fences',
+                '.Response:JSON object without Markdown formatting and any extra text',
             },
           ],
         },
       ],
       temperature: 1,
-      max_output_tokens: 2048,
+      max_output_tokens: 4096,
     });
+    console.log('response', response.output_text);
     return JSON.parse(response.output_text) as T;
   }
 
@@ -182,5 +183,39 @@ export class TranslatorService {
       console.error(error);
       throw new Error('TTS failed');
     }
+  }
+
+  getExamFunction() {
+    return {
+      type: 'function',
+      function: {
+        name: 'get_exam_sample',
+        description:
+          'Generate a language exam sample based on user preferences',
+        parameters: {
+          type: 'object',
+          properties: {
+            language: {
+              type: 'string',
+              description: 'Target language to learn (e.g., English, Spanish)',
+            },
+            level: {
+              type: 'string',
+              description: 'Proficiency level (e.g., A2, B1, C1)',
+            },
+            exam: {
+              type: 'string',
+              description: 'Type of exam (e.g., TOEFL, IELTS)',
+            },
+            topic: {
+              type: 'string',
+              description:
+                'Topic of the exam sample (e.g., environment, health)',
+            },
+          },
+          required: ['language', 'level', 'exam', 'topic'],
+        },
+      },
+    };
   }
 }

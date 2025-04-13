@@ -27,12 +27,25 @@ export class LessonController {
     return this.service.questionCorrection(user, body.answer);
   }
 
-  @Post('/reading-correction')
+  @Post('/reading/correction')
   async readingCorrection(
     @User() user: UserProfileModel,
     @Body() body: { answer: string },
   ) {
     return this.service.readingCorrection(user, body.answer);
+  }
+
+  @Post('/reading/answers')
+  async applyReadingAnswers(
+    @User() user: UserProfileModel,
+    @Body()
+    body: {
+      questionIndex: number;
+      isCorrect: boolean;
+      questionType: 'choices' | 'simple';
+    },
+  ) {
+    return this.service.applyReadingAnswers(user, body);
   }
 
   @Post('/finish-lesson')

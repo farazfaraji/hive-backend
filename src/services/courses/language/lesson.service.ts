@@ -151,6 +151,50 @@ export class LessonService {
     return question;
   }
 
+  async applyReadingAnswers(
+    user: UserProfileModel,
+    body: {
+      questionIndex: number;
+      isCorrect: boolean;
+      questionType: 'choices' | 'simple';
+    },
+  ) {
+    const userProgress = await this.progressService.findOne({ user: user._id });
+
+    if (!userProgress) {
+      throw new Error('Progress not found');
+    }
+
+    const { questionIndex, isCorrect, questionType } = body;
+
+    // Get the current exam object
+    const currentExam = userProgress.lesson.exam;
+
+    // Create or update the results array for the specific question type
+    const resultsKey = `${questionType}Results`;
+    const results = currentExam[resultsKey] || [];
+
+    // Add the new result
+    results[questionIndex] = {
+      isCorrect,
+      date: new Date(),
+    };
+
+    // Update the exam object with the new results
+    const updatedExam = {
+      ...currentExam,
+      [resultsKey]: results,
+    };
+
+    // Update the progress document
+    await this.progressService.updateOne(
+      { user: user._id },
+      { 'lesson.exam': updatedExam },
+    );
+
+    return { status: 'success' };
+  }
+
   async readingCorrection(
     user: UserProfileModel,
     answer: string,
@@ -209,6 +253,7 @@ export class LessonService {
     const progress = await this.progressService.findOne({ user: user._id });
 
     if (progress?.exam) {
+      console.log('progress.exam', progress.exam);
       return progress.exam;
     }
 
@@ -226,10 +271,20 @@ export class LessonService {
       prompt = `You're a language tutor.Language: ${user.targetLanguage}.Level: ${user.level}.
       Exam: ${user.exam}.I want you to give me a short sample for the exam in ${user.level} for writing.`;
     }
-    const exam = await this.translatorService.sendPrompt<Exam>(prompt);
-    await this.progressService.updateOne({ user: user._id }, { exam: exam });
+    try {
+      const exam = await this.translatorService.sendPrompt<Exam>(prompt);
 
-    return { ...exam, plan: currentPlan };
+      if (!exam) {
+        return this.getExam(user);
+      }
+
+      await this.progressService.updateOne({ user: user._id }, { exam: exam });
+
+      return { ...exam, plan: currentPlan };
+    } catch (e) {
+      console.log(e);
+      return this.getExam(user);
+    }
   }
 
   async getNextLesson(user: UserProfileModel): Promise<Grammar> {

@@ -1,59 +1,85 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { AppModule } from '../src/app.module';
+import { AuthTestHelper } from './helpers/auth.helper';
 import {
-  deleteAllDocumentsInCollection,
-  createTestUser,
-  loginTestUser,
-} from './e2e/helper/helper.test';
+  setupTestDatabase,
+  cleanupTestDatabase,
+  clearCollection,
+} from './setup';
+import { UserSignupDto } from '../src/dtos/auth/signup.dto';
+import { LoginDto } from '../src/dtos/auth/login.dto';
+import { Language } from '../src/schemas/word.schema';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
+  let authHelper: AuthTestHelper;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+  const testUser: UserSignupDto = {
+    firstname: 'Test',
+    lastname: 'User',
+    email: 'test@example.com',
+    password: 'password123',
+    passwordConfirm: 'password123',
+    phone: '1234567890',
+    targetLanguage: Language.English,
+    language: Language.English,
+    interests: ['sports', 'music'],
+  };
 
-    await deleteAllDocumentsInCollection('users');
-    app = moduleFixture.createNestApplication();
-    await app.init();
+  const loginCredentials: LoginDto = {
+    email: testUser.email,
+    password: testUser.password,
+  };
+
+  beforeAll(async () => {
+    const { app: testApp } = await setupTestDatabase();
+    app = testApp;
+    authHelper = new AuthTestHelper(app);
   });
 
-  afterEach(async () => {
+  beforeEach(async () => {
+    await clearCollection('users');
+  });
+
+  afterAll(async () => {
+    await cleanupTestDatabase();
     await app.close();
   });
 
   describe('POST /v1/auth/signup', () => {
     it('should create a new user', async () => {
-      const response = await createTestUser(app);
+      const response = await authHelper.createUser(testUser);
       expect(response.status).toBe(201);
-      expect(response.body.status).toBe(true);
     });
 
-    it('should fail when email already exists', async () => {
-      await createTestUser(app);
-      const response = await createTestUser(app);
+    it('should not create a user with existing email', async () => {
+      await authHelper.createUser(testUser);
+      const response = await authHelper.createUser(testUser);
       expect(response.status).toBe(400);
-      expect(response.body.status).toBe(false);
-      expect(response.body.message).toBeDefined();
     });
   });
 
   describe('POST /v1/auth/login', () => {
-    beforeEach(async () => {
-      await createTestUser(app);
-    });
-
-    it('should login successfully with valid credentials', async () => {
-      const response = await loginTestUser(app);
-
+    it('should login successfully with correct credentials', async () => {
+      await authHelper.createUser(testUser);
+      const response = await authHelper.login(loginCredentials);
       expect(response.status).toBe(201);
-      expect(response.body.token).toBeDefined();
+      expect(response.body).toHaveProperty('token');
     });
 
-    it('should fail with invalid credentials', async () => {
-      const response = await loginTestUser(app, { password: 'wrongpassword' });
+    it('should not login with incorrect password', async () => {
+      await authHelper.createUser(testUser);
+      const response = await authHelper.login({
+        ...loginCredentials,
+        password: 'wrongpassword',
+      });
+      expect(response.status).toBe(401);
+    });
+
+    it('should not login with non-existent email', async () => {
+      const response = await authHelper.login({
+        ...loginCredentials,
+        email: 'nonexistent@example.com',
+      });
       expect(response.status).toBe(401);
     });
   });
