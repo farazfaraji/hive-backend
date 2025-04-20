@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 import { SchemaBase } from 'src/abstracts/schema.abstract';
-import { Language } from './word.schema';
+import { Course } from './language/language-course.schema';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -22,20 +22,8 @@ export class User extends SchemaBase {
   @Prop({ required: false })
   phone?: string;
 
-  @Prop({ required: false })
-  exam?: string;
-
-  @Prop({ required: true, type: Number, default: 0 })
-  level: number;
-
-  @Prop({ required: true, type: [String], default: [] })
-  interests: string[];
-
-  @Prop({ required: true, type: String, default: 'en' })
-  targetLanguage: Language;
-
-  @Prop({ required: true, type: String, default: 'en' })
-  language: Language;
+  @Prop({ required: false, type: [String], enum: Course, default: [] })
+  courses?: Course[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

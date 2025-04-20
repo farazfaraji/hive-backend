@@ -7,7 +7,6 @@ import {
 } from './setup';
 import { UserSignupDto } from '../src/dtos/auth/signup.dto';
 import { LoginDto } from '../src/dtos/auth/login.dto';
-import { Language } from '../src/schemas/word.schema';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
@@ -20,9 +19,6 @@ describe('AuthController (e2e)', () => {
     password: 'password123',
     passwordConfirm: 'password123',
     phone: '1234567890',
-    targetLanguage: Language.English,
-    language: Language.English,
-    interests: ['sports', 'music'],
   };
 
   const loginCredentials: LoginDto = {

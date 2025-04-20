@@ -7,13 +7,16 @@ import {
 } from 'src/schemas/word-user.schema';
 import { UserProfileModel } from './../../auth.service';
 import { AbstractService } from 'src/abstracts/service.abstract';
-
+import { CourseService } from './../course.service';
 @Injectable()
 export class WordUserService extends AbstractService<
   WordUser,
   WordUserDocument
 > {
-  constructor(private readonly repository: WordUserRepository) {
+  constructor(
+    private readonly courseService: CourseService,
+    private readonly repository: WordUserRepository,
+  ) {
     super(repository.getTarget());
   }
 
@@ -21,11 +24,15 @@ export class WordUserService extends AbstractService<
     user: UserProfileModel,
     word: WordUserDto,
   ): Promise<WordUserDocument> {
+    const languageCourse = await this.courseService.getLanguageCourse(user);
+    if (!languageCourse) {
+      throw new Error('Language course not found');
+    }
     const data = await this.insertIfNotExist(['wordId', 'userId'], {
       ...word,
       uniqueId: word.uniqueId,
       userId: user._id,
-      language: user.language,
+      language: languageCourse.targetLanguage,
       isLearned: false,
       isFavorite: false,
       lastTry: new Date(),
@@ -37,13 +44,17 @@ export class WordUserService extends AbstractService<
   }
 
   async getCandidate(user: UserProfileModel): Promise<WordUserDocument | null> {
+    const languageCourse = await this.courseService.getLanguageCourse(user);
+    if (!languageCourse) {
+      throw new Error('Language course not found');
+    }
     const currentDate = new Date();
 
     const result = await this.repository.getTarget().aggregate([
       {
         $match: {
           userId: user._id,
-          language: user.language,
+          language: languageCourse.targetLanguage,
           nextTry: { $lte: currentDate },
           isDeleted: false,
           isLearned: false,

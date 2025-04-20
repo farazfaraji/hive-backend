@@ -27,6 +27,17 @@ import { ProgressRepository } from './repositories/progress.repository';
 import { WordUserService } from './services/courses/language/word-user.service';
 import { WordUser, WordUserSchema } from './schemas/word-user.schema';
 import { WordUserRepository } from './repositories/word-user.repository';
+import { PlanService } from './services/plan.service';
+import { Plan, PlanSchema } from './schemas/plan.schema';
+import { PlanRepository } from './repositories/plan.repository';
+import { PlanController } from './controllers/plan.controller';
+import { CourseService } from './services/courses/course.service';
+import {
+  LanguageCource,
+  LanguageCourceSchema,
+} from './schemas/language/language-course.schema';
+import { CoursesController } from './controllers/courses.controller';
+import { UserService } from './services/user.service';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -47,6 +58,8 @@ import { WordUserRepository } from './repositories/word-user.repository';
       { name: Grammar.name, schema: GrammarSchema },
       { name: Progress.name, schema: ProgressSchema },
       { name: WordUser.name, schema: WordUserSchema },
+      { name: Plan.name, schema: PlanSchema },
+      { name: LanguageCource.name, schema: LanguageCourceSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -63,22 +76,28 @@ import { WordUserRepository } from './repositories/word-user.repository';
     WordController,
     LessonController,
     GrammarController,
+    PlanController,
+    CoursesController,
   ],
   providers: [
     AppService,
     AuthService,
     JwtStrategy,
+    PlanService,
     WordService,
     LessonService,
     ProgressService,
     GrammarService,
     TranslatorService,
+    UserService,
+    CourseService,
     WordUserService,
     WordRepository,
     WordUserRepository,
     UserRepository,
     GrammarRepository,
     ProgressRepository,
+    PlanRepository,
   ],
 })
 export class AppModule {}

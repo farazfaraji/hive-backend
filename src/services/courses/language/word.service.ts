@@ -9,21 +9,26 @@ import { TranslatorService } from '../../translator.service';
 import { getTranslationResponse } from 'src/controllers/word.controller';
 import { WordUserService } from './word-user.service';
 import { Schema as MongooseSchema } from 'mongoose';
-
+import { CourseService } from '../course.service';
 @Injectable()
 export class WordService extends AbstractService<Word, WordDocument> {
   constructor(
     private readonly translatorService: TranslatorService,
     private readonly wordUserService: WordUserService,
+    private readonly courseService: CourseService,
     private readonly repository: WordRepository,
   ) {
     super(repository.getTarget());
   }
 
   async createWord(user: UserProfileModel, word: NewWordDto) {
+    const languageCourse = await this.courseService.getLanguageCourse(user);
+    if (!languageCourse) {
+      throw new Error('Language course not found');
+    }
     const res = await this.insertIfNotExist(['word'], {
       ...word,
-      language: user.language,
+      language: languageCourse.targetLanguage,
       uniqueId: uuidv4(),
     });
     if (res.exist) {
@@ -32,12 +37,10 @@ export class WordService extends AbstractService<Word, WordDocument> {
         word: res.data,
       };
     }
-
     await this.wordUserService.create(user, {
       wordId: res.data._id as MongooseSchema.Types.ObjectId,
       uniqueId: res.data.uniqueId,
     });
-
     return res.data;
   }
 
@@ -66,13 +69,16 @@ export class WordService extends AbstractService<Word, WordDocument> {
     }
 
     try {
+      const languageCourse = await this.courseService.getLanguageCourse(user);
+      if (!languageCourse) {
+        throw new Error('Language course not found');
+      }
       const translation = await this.translatorService.translate(
         word.word,
-        user.level.toString(),
-        user.targetLanguage,
-        user.language,
+        languageCourse.level.toString(),
+        languageCourse.targetLanguage,
+        languageCourse.mainLanguage,
       );
-
       await this.updateOne(
         { uniqueId: wordId },
         {
@@ -83,7 +89,6 @@ export class WordService extends AbstractService<Word, WordDocument> {
           contexts: translation.contexts,
         },
       );
-
       return {
         uniqueId: word.uniqueId,
         word: word.word,

@@ -8,7 +8,7 @@ import { UserRepository } from 'src/repositories/user.repository';
 import { LoginDto } from 'src/dtos/auth/login.dto';
 import { UserSignupDto } from 'src/dtos/auth/signup.dto';
 import { Schema as MongooseSchema } from 'mongoose';
-import { Language } from 'src/schemas/word.schema';
+import { Course } from 'src/schemas/language/language-course.schema';
 
 export type UserProfileModel = {
   userId: string;
@@ -16,11 +16,7 @@ export type UserProfileModel = {
   firstname: string;
   lastname: string;
   email: string;
-  level: number;
-  targetLanguage: Language;
-  interests: string[];
-  language: Language;
-  exam?: string;
+  cources: Course[];
 };
 
 @Injectable()
@@ -86,8 +82,7 @@ export class AuthService extends AbstractService<User, UserDocument> {
       uniqueId: uuidv4(),
       password: hashedPassword,
       isDeleted: false,
-      level: 0,
-      interests: [],
+      courses: [],
     });
   }
 
@@ -104,11 +99,7 @@ export class AuthService extends AbstractService<User, UserDocument> {
       firstname: user.firstname,
       lastname: user.lastname,
       email: user.email,
-      level: user.level,
-      targetLanguage: user.targetLanguage,
-      interests: user.interests,
-      language: user.language,
-      exam: user.exam,
+      cources: user.courses,
     };
   }
 }

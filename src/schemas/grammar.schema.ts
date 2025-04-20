@@ -21,11 +21,14 @@ export class Grammar extends SchemaBase {
   @Prop({ required: true })
   language: Language;
 
-  @Prop({ required: true })
-  level: string;
-
   @Prop({ required: false })
-  definition?: string;
+  level?: string;
+
+  @Prop({ required: true })
+  index: number;
+
+  @Prop({ type: [String], default: [], required: false })
+  definition?: string[];
 }
 
 export const GrammarSchema = SchemaFactory.createForClass(Grammar);

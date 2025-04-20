@@ -8,19 +8,27 @@ import {
 } from 'src/services/courses/language/lesson.service';
 export type ProgressDocument = HydratedDocument<Progress>;
 
-export interface Exam {
+export type Try = {
+  isCorrect: boolean;
+  date: Date;
+};
+
+export type Exam = {
   plan: string;
   text: string;
   choices: {
     question: string;
     choices: string[];
     answer: string;
+    isPassed: boolean;
+    tries: Try[];
   }[];
   simple: {
     question: string;
     answer: string;
+    tries: Try[];
   }[];
-}
+};
 
 export interface Definition {
   id: string;

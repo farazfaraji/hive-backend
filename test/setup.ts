@@ -4,6 +4,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { AppModule } from '../src/app.module';
+import 'reflect-metadata';
 
 let mongod: MongoMemoryServer;
 let connection: Connection;
@@ -37,3 +38,12 @@ export async function clearCollection(collectionName: string) {
     await connection.db.collection(collectionName).deleteMany({});
   }
 }
+
+// Add any global test setup here
+beforeAll(() => {
+  // Global setup if needed
+});
+
+afterAll(() => {
+  // Global teardown if needed
+});

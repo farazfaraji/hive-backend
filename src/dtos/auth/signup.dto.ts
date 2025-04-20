@@ -32,16 +32,4 @@ export class UserSignupDto {
   @IsString()
   @IsNumberString()
   phone: string;
-
-  @IsEnum(Language)
-  @IsNotEmpty()
-  targetLanguage: Language;
-
-  @IsEnum(Language)
-  @IsNotEmpty()
-  language: Language;
-
-  @IsArray()
-  @IsString({ each: true })
-  interests: string[];
 }

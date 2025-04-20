@@ -14,12 +14,12 @@ export class LessonController {
     return this.service.getLesson(user);
   }
 
-  @Get('/question')
-  async getQuestion(@User() user: UserProfileModel) {
-    return this.service.getQuestion(user);
+  @Get('/grammer/question')
+  async getGrammerQuestion(@User() user: UserProfileModel) {
+    return this.service.getGrammerQuestion(user);
   }
 
-  @Post('/answer')
+  @Post('/grammer/correction')
   async questionCorrection(
     @User() user: UserProfileModel,
     @Body() body: { answer: string },
