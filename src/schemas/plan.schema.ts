@@ -8,6 +8,8 @@ export type PlanDocument = HydratedDocument<Plan>;
 export type PlanItem = {
   name: string;
   detail: string[];
+  isPassed: boolean;
+  score: number;
 };
 
 export type PlanDetail = {
@@ -28,6 +30,8 @@ export class Plan extends SchemaBase {
         {
           name: { type: String, required: true },
           detail: [{ type: String, required: true }],
+          isPassed: { type: Boolean, required: true },
+          score: { type: Number, required: true },
         },
       ],
     },

@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
   Course,
-  LanguageCource,
+  LanguageCourse,
   LanguageCourceDocument,
 } from 'src/schemas/language/language-course.schema';
 import { UserProfileModel } from '../auth.service';
@@ -12,12 +12,14 @@ import { CreateLanguageCourseDto } from 'src/dtos/plan/create-language-course.dt
 import { UserService } from '../user.service';
 import { ExamType, Interests } from 'src/constants/courses.constant';
 import { Language } from 'src/schemas/word.schema';
+import { PlanService } from '../plan.service';
 @Injectable()
 export class CourseService {
   constructor(
-    @InjectModel(LanguageCource.name)
+    @InjectModel(LanguageCourse.name)
     public model: Model<LanguageCourceDocument>,
     private readonly userService: UserService,
+    private readonly planService: PlanService,
   ) {}
 
   async createLanguageCourse(
@@ -33,6 +35,8 @@ export class CourseService {
       return existingCourse;
     }
 
+    await this.planService.createPlan(user, Course.Language);
+
     await this.userService.addCourse(user, Course.Language);
 
     // Create new course if it doesn't exist
@@ -46,10 +50,11 @@ export class CourseService {
     });
   }
 
-  async getLanguageCourse(user: UserProfileModel) {
+  async getLanguageCourse(
+    user: UserProfileModel,
+  ): Promise<LanguageCourse | null> {
     const existingCourse = await this.model.findOne({
       user: user._id,
-      course: Course.Language,
     });
 
     return existingCourse;

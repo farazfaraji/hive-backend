@@ -72,6 +72,19 @@ export class AbstractService<Schema, Document> {
     } as UpdateQuery<Document>);
   }
 
+  async upsert(
+    filter: Partial<Schema> & Partial<SchemaBase>,
+    data: UpdateWithAggregationPipeline | UpdateQuery<Schema> | Partial<Schema>,
+  ) {
+    return this.model.updateOne(
+      filter,
+      {
+        $set: data,
+      } as UpdateQuery<Document>,
+      { upsert: true },
+    );
+  }
+
   async deleteOne(filter: Partial<Schema> & Partial<SchemaBase>) {
     return this.model.updateOne(filter, { isDeleted: true });
   }

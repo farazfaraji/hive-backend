@@ -14,40 +14,6 @@ export class LessonController {
     return this.service.getLesson(user);
   }
 
-  @Get('/grammer/question')
-  async getGrammerQuestion(@User() user: UserProfileModel) {
-    return this.service.getGrammerQuestion(user);
-  }
-
-  @Post('/grammer/correction')
-  async questionCorrection(
-    @User() user: UserProfileModel,
-    @Body() body: { answer: string },
-  ) {
-    return this.service.questionCorrection(user, body.answer);
-  }
-
-  @Post('/reading/correction')
-  async readingCorrection(
-    @User() user: UserProfileModel,
-    @Body() body: { answer: string },
-  ) {
-    return this.service.readingCorrection(user, body.answer);
-  }
-
-  @Post('/reading/answers')
-  async applyReadingAnswers(
-    @User() user: UserProfileModel,
-    @Body()
-    body: {
-      questionIndex: number;
-      isCorrect: boolean;
-      questionType: 'choices' | 'simple';
-    },
-  ) {
-    return this.service.applyReadingAnswers(user, body);
-  }
-
   @Post('/finish-lesson')
   async finishLesson(@User() user: UserProfileModel) {
     return this.service.finishLesson(user);

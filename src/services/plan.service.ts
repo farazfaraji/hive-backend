@@ -37,7 +37,7 @@ export class PlanService extends AbstractService<Plan, PlanDocument> {
       plans: selectedPlans,
     };
 
-    return this.insertOne({
+    return this.insertIfNotExist(['user'], {
       user: user._id,
       uniqueId: uuidv4(),
       course,
@@ -55,8 +55,10 @@ export class PlanService extends AbstractService<Plan, PlanDocument> {
       return {
         name: ConversationPlans[randomIndex],
         detail: [ConversationPlans[randomIndex]],
+        isPassed: false,
+        score: 0,
       };
     }
-    return { name: plan, detail: [] };
+    return { name: plan, detail: [], isPassed: false, score: 0 };
   }
 }

@@ -4,7 +4,7 @@ import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 import { Language } from '../word.schema';
 import { Interests } from 'src/constants/courses.constant';
 
-export type LanguageCourceDocument = HydratedDocument<LanguageCource>;
+export type LanguageCourceDocument = HydratedDocument<LanguageCourse>;
 
 export enum Course {
   'Language' = 'Language',
@@ -13,7 +13,7 @@ export enum Course {
 }
 
 @Schema({ collection: 'language_courses' })
-export class LanguageCource extends SchemaBase {
+export class LanguageCourse extends SchemaBase {
   @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: 'User' })
   user: MongooseSchema.Types.ObjectId;
 
@@ -33,5 +33,5 @@ export class LanguageCource extends SchemaBase {
   level: string;
 }
 
-export const LanguageCourceSchema =
-  SchemaFactory.createForClass(LanguageCource);
+export const LanguageCourseSchema =
+  SchemaFactory.createForClass(LanguageCourse);

@@ -5,6 +5,28 @@ import { Course } from './language/language-course.schema';
 
 export type UserDocument = HydratedDocument<User>;
 
+export type LanguageProgress = {
+  grammarIndex: number;
+};
+
+export type UserProgress =
+  | {
+      course: Course.Language;
+      progress: {
+        grammarIndex: number;
+      };
+    }
+  | {
+      course: Course.Math;
+      progress: LanguageProgress;
+    }
+  | {
+      course: Course.Programming;
+      progress: {
+        code: string;
+      };
+    };
+
 @Schema({ collection: 'users' })
 export class User extends SchemaBase {
   @Prop({ required: true })
@@ -24,6 +46,9 @@ export class User extends SchemaBase {
 
   @Prop({ required: false, type: [String], enum: Course, default: [] })
   courses?: Course[];
+
+  @Prop({ required: false, type: [Object], default: [] })
+  progress?: UserProgress[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

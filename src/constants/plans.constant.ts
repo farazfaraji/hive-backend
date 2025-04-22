@@ -11,13 +11,6 @@ export const Plans = [
       'listening',
       'speaking',
       'conversation',
-      'news',
-      'story',
-      'movie',
-      'essay',
-      'letter',
-      'report',
-      'presentation',
     ],
   },
 ];

@@ -15,9 +15,6 @@ export class Grammar extends SchemaBase {
   @Prop({ required: true })
   item: string;
 
-  @Prop({ required: true, type: [String], default: [] })
-  subs: string[];
-
   @Prop({ required: true })
   language: Language;
 

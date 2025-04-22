@@ -1,13 +1,19 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UserProfileModel } from '../../auth.service';
 import { GrammarService } from './grammar.service';
 import { TranslatorService } from '../../translator.service';
-import { ProgressService } from './progress.service';
-import { Grammar } from 'src/schemas/grammar.schema';
-import { Exam, Lesson } from 'src/schemas/progress.schema';
-import { v4 as uuidv4 } from 'uuid';
-import { Schema as MongooseSchema } from 'mongoose';
 import { CourseService } from '../course.service';
+import { PlanService } from 'src/services/plan.service';
+import {
+  Course,
+  LanguageCourse,
+} from 'src/schemas/language/language-course.schema';
+import { Lesson, LessonDocument } from 'src/schemas/lesson.schema';
+import { AbstractService } from 'src/abstracts/service.abstract';
+import { LessonRepository } from 'src/repositories/lesson.repository';
+import { v4 as uuidv4 } from 'uuid';
+import { UserService } from 'src/services/user.service';
+import { LanguageProgress } from 'src/schemas/user.schema';
 export type CorrectionReading = {
   advices: string[];
   score: number;
@@ -33,328 +39,116 @@ export type GrammerQuestion = {
 };
 
 @Injectable()
-export class LessonService {
+export class LessonService extends AbstractService<Lesson, LessonDocument> {
   constructor(
     private readonly grammarService: GrammarService,
-    private readonly progressService: ProgressService,
     private readonly translatorService: TranslatorService,
     private readonly courseService: CourseService,
-  ) {}
+    private readonly planService: PlanService,
+    private readonly userService: UserService,
+    private readonly repository: LessonRepository,
+  ) {
+    super(repository.getTarget());
+  }
 
   async getLesson(user: UserProfileModel) {
-    const languageCourse = await this.courseService.getLanguageCourse(user);
-    if (!languageCourse) {
-      throw new Error('Language course not found');
-    }
-    const progress = await this.progressService.findOne({ user: user._id });
+    const lesson = await this.findOne({ user: user._id });
 
-    if (progress?.lesson) {
-      const grammar = await this.grammarService.getGrammar(
-        user,
-        progress.currentGrammar,
-      );
-      return { ...progress.lesson, grammar };
-    }
+    const plan = await this.planService.findOne({ user: user._id });
 
-    const grammar = progress?.currentGrammar
-      ? await this.grammarService.getGrammar(user, progress.currentGrammar)
-      : await this.getNextLesson(user);
+    const currentPlanDetail = plan.detail.plans[plan.detail.current];
 
-    const news = await this.translatorService.getNewsByGrammer(
-      languageCourse.mainLanguage,
-      languageCourse.targetLanguage,
-      grammar.item,
-      languageCourse.interests,
-    );
-
-    const dialogue = await this.translatorService.getShortDialogByGrammer(
-      languageCourse.mainLanguage,
-      languageCourse.targetLanguage,
-      grammar.item,
-      languageCourse.interests,
-    );
-
-    const exam = await this.getExam(user);
-
-    const words = await this.translatorService.getSomeWords(
-      languageCourse.mainLanguage,
-      languageCourse.targetLanguage,
-      languageCourse.interests,
-    );
-
-    const lesson: Lesson = {
-      grammar: grammar._id,
-      news,
-      dialogue,
-      exam,
-      words,
-    };
-
-    const isExist = await this.progressService.findOne({ user: user._id });
-    if (isExist) {
-      await this.progressService.updateOne({ _id: user._id }, { lesson });
-    } else {
-      await this.progressService.insertOne({
-        currentGrammar: grammar._id as MongooseSchema.Types.ObjectId,
-        completedGrammarIds: [],
+    if (!lesson) {
+      await this.insertOne({
         user: user._id,
         uniqueId: uuidv4(),
-        lesson,
       });
+    } else if (lesson.lesson) {
+      return {
+        type: currentPlanDetail.name,
+        data: lesson.lesson,
+      };
     }
 
-    return { ...lesson, grammar };
-  }
-
-  async getGrammerQuestion(user: UserProfileModel) {
-    const progress = await this.progressService.findOne({ user: user._id });
-
-    if (!progress?.lesson) {
-      throw new Error('Lesson not found');
-    }
-
-    const numberofQuestions = progress.numberOfQuestions || 0;
-
-    if (numberofQuestions === 3) {
-      throw new BadRequestException(
-        'You have reached the maximum number of questions',
-      );
-    }
-
-    const grammar = await this.grammarService.findOne({
-      _id: progress.currentGrammar,
-    });
-
-    const question = progress.lastQuestion
-      ? progress.lastQuestion
-      : await this.getNewQuestion(user, grammar, numberofQuestions);
-
-    return { question: question, numberofQuestions };
-  }
-
-  async getNewQuestion(
-    user: UserProfileModel,
-    grammar: Grammar,
-    numberofQuestions: number,
-  ) {
-    const languageCourse = await this.courseService.getLanguageCourse(user);
-    if (!languageCourse) {
-      throw new Error('Language course not found');
-    }
-    const question = (
-      await this.translatorService.getQuestionByGrammer(
-        languageCourse.mainLanguage,
-        languageCourse.targetLanguage,
-        grammar.item,
-        languageCourse.interests,
-      )
-    ).question;
-
-    this.progressService.updateOne(
-      { user: user._id },
-      {
-        lastQuestion: question,
-        numberOfQuestions: numberofQuestions + 1,
-      },
-    );
-    return question;
-  }
-
-  async applyReadingAnswers(
-    user: UserProfileModel,
-    body: {
-      questionIndex: number;
-      isCorrect: boolean;
-      questionType: 'choices' | 'simple';
-    },
-  ) {
-    const userProgress = await this.progressService.findOne({ user: user._id });
-
-    if (!userProgress) {
-      throw new Error('Progress not found');
-    }
-
-    const { questionIndex, isCorrect, questionType } = body;
-
-    // Get the current exam object
-    const currentExam = userProgress.lesson.exam;
-
-    // Create or update the results array for the specific question type
-    const resultsKey = `${questionType}Results`;
-    const results = currentExam[resultsKey] || [];
-
-    // Add the new result
-    results[questionIndex] = {
-      isCorrect,
-      date: new Date(),
-    };
-
-    // Update the exam object with the new results
-    const updatedExam = {
-      ...currentExam,
-      [resultsKey]: results,
-    };
-
-    // Update the progress document
-    await this.progressService.updateOne(
-      { user: user._id },
-      { 'lesson.exam': updatedExam },
-    );
-
-    return { status: 'success' };
-  }
-
-  async readingCorrection(
-    user: UserProfileModel,
-    answer: string,
-  ): Promise<CorrectionReading> {
     const languageCourse = await this.courseService.getLanguageCourse(user);
     if (!languageCourse) {
       throw new Error('Language course not found');
     }
 
-    const progress = await this.progressService.findOne({ user: user._id });
-
-    const reading = progress.lesson.exam.text;
-
-    const prompt = `You're a language tutor.Language: ${languageCourse.targetLanguage}.Level: ${languageCourse.level}.
-    Imagine this you are a corrector for the ${languageCourse.examType} exam. correct my answer. give me some advices, and score it from 0 to 100.
-    This is reading: ${reading}
-    This is my answer: ${answer}
-    Give a JSON: {"advices": ["string"], "score": "number"}}`;
-
-    return this.translatorService.sendPrompt<CorrectionReading>(prompt);
-  }
-
-  async questionCorrection(user: UserProfileModel, answer: string) {
-    const languageCourse = await this.courseService.getLanguageCourse(user);
-    if (!languageCourse) {
-      throw new Error('Language course not found');
-    }
-
-    const progress = await this.progressService.findOne({ user: user._id });
-    if (!progress) {
-      throw new Error('Progress not found');
-    }
-
-    if (!progress.lastQuestion) {
-      throw new Error('Question not found');
-    }
-
-    const result = await this.translatorService.questionCorrection(
-      languageCourse.level.toString(),
-      languageCourse.targetLanguage,
-      progress.lastQuestion,
-      answer,
-    );
-
-    const numberOfWrongAnswers = progress.numberOfWrongAnswers || 0;
-
-    if (result.correct === 'yes' || numberOfWrongAnswers === 3) {
-      await this.progressService.updateOne(
+    if (currentPlanDetail.isPassed) {
+      this.planService.updateOne(
         { user: user._id },
-        { lastQuestion: null, numberOfWrongAnswers: 0 },
+        {
+          'detail.current': plan.detail.current + 1,
+        },
       );
-    } else {
-      await this.progressService.updateOne(
-        { user: user._id },
-        { numberOfWrongAnswers: numberOfWrongAnswers + 1 },
-      );
+      return this.getLesson(user);
     }
-    return result;
+
+    const prompts = await this.getPrompt(
+      user,
+      currentPlanDetail.name,
+      currentPlanDetail.detail,
+      languageCourse,
+    );
+
+    let data = {};
+
+    for (const prompt of prompts) {
+      const response = await this.translatorService.sendPrompt<object>(prompt);
+      data = { ...data, ...response };
+    }
+
+    await this.upsert({ user: user._id }, { lesson: data });
+
+    return this.getLesson(user);
   }
 
-  async getExam(user: UserProfileModel): Promise<Exam> {
-    const languageCourse = await this.courseService.getLanguageCourse(user);
-    if (!languageCourse) {
-      throw new Error('Language course not found');
-    }
+  async getPrompt(
+    user: UserProfileModel,
+    planName: string,
+    detail: string[],
+    languageCourse: LanguageCourse,
+  ): Promise<string[]> {
+    const toReturn = [];
+    switch (planName) {
+      case 'grammar':
+        const progress = await this.userService.getProgress<LanguageProgress>(
+          user,
+          Course.Language,
+        );
 
-    if (!languageCourse.examType) {
-      return null;
-    }
+        const grammer = await this.grammarService.findOne({
+          index: progress.grammarIndex,
+        });
 
-    const progress = await this.progressService.findOne({ user: user._id });
-
-    if (progress?.exam) {
-      return progress.exam;
-    }
-
-    const plan = ['reading'];
-    const currentPlan = plan[Math.floor(Math.random() * plan.length)];
-    let prompt = '';
-    if (currentPlan === 'reading') {
-      prompt = `You're a language tutor.Language: ${languageCourse.targetLanguage}.Level: ${languageCourse.level}.
-      Exam:${languageCourse.examType}.I want you to give me a real sample for the exam in ${languageCourse.level} for ${currentPlan}.
-      5 choices questions and 5 true/false questions.
-      Give a JSON: {"text": "reading text","choices":
-      [{"question": "question", "choices": ["choice1", "choice2", "choice3", "choice4"],"answer":"answer"}],
-      "simple":[{"question":"true/false questions","answer":"answer"}]}`;
-    } else {
-      prompt = `You're a language tutor.Language: ${languageCourse.targetLanguage}.Level: ${languageCourse.level}.
-      Exam: ${languageCourse.examType}.I want you to give me a short sample for the exam in ${languageCourse.level} for writing.`;
-    }
-    try {
-      const exam = await this.translatorService.sendPrompt<Exam>(prompt);
-
-      if (!exam) {
-        return this.getExam(user);
-      }
-
-      await this.progressService.updateOne({ user: user._id }, { exam: exam });
-
-      return { ...exam, plan: currentPlan };
-    } catch (e) {
-      console.log(e);
-      return this.getExam(user);
-    }
-  }
-
-  async getNextLesson(user: UserProfileModel): Promise<Grammar> {
-    const progress = await this.progressService.findOne({ _id: user._id });
-    const grammers = await this.grammarService.listGrammars(user);
-    for (const grammar of grammers.data) {
-      if (progress?.completedGrammarIds.length) {
-        if (progress.completedGrammarIds.includes(grammar._id.toString())) {
-          continue;
+        if (!grammer) {
+          throw new Error('Grammer not found');
         }
-      }
 
-      return grammar;
+        toReturn.push(`You're a language tutor.Language: ${languageCourse.targetLanguage}.Level: ${languageCourse.level}.
+        can you explain this grammer: ${grammer.item}. and give me 5 examples and 5 in fill the blank questions to force me to use the grammer.
+        for fill the blank questions, show the blank part by <blank>.show the normal form of the answer by <verb>verb</verb> at the end of the sentence.
+        also 5 questions to force me to use the grammer in multiple choice. Response in JSON:
+        {"title":"title of the grammer","grammar": "explanation", "examples": ["example1"], "fill_in_blank": [{text:"question",answer:"answer"}],"multiple_choice": [{text:"question",choices:["choice1"],answer:"answer"}]`);
+        toReturn.push(`You're a language tutor.Language: ${languageCourse.targetLanguage}.Level: ${languageCourse.level}.I'm learning this grammer: ${grammer.item}.
+        Im interested in this subjects: ${languageCourse.interests.join(',')}.give me an article to read and using this grammer in the article in 15 lines in 3 pages. use <bold>{used_word}</bold> that places which this grammer is used.
+        Response in JSON:
+        {"article": {subject:"article subject",pages:["page1","page2","page3"]}}`);
+        break;
     }
+    return toReturn;
   }
 
   async finishLesson(user: UserProfileModel) {
-    const progress = await this.progressService.findOne({ user: user._id });
-    if (!progress) {
-      throw new Error('Progress not found');
-    }
-
-    if (!progress.currentGrammar) {
-      throw new Error('No current grammar lesson to complete');
-    }
-
-    const currentGrammarId = progress.currentGrammar.toString();
-
-    // Prevent duplicate grammar IDs
-    if (!progress.completedGrammarIds.includes(currentGrammarId)) {
-      progress.completedGrammarIds = [
-        ...progress.completedGrammarIds,
-        currentGrammarId,
-      ];
-    }
-
-    await this.progressService.updateOne(
+    await this.updateOne({ user: user._id }, { lesson: null });
+    const plan = await this.planService.findOne({ user: user._id });
+    await this.planService.updateOne(
       { user: user._id },
       {
-        lesson: null,
-        numberOfQuestions: 0,
-        numberOfWrongAnswers: 0,
-        lastQuestion: null,
-        completedGrammarIds: progress.completedGrammarIds,
-        currentGrammar: null,
+        [`detail.plans.${plan.detail.current}.isPassed`]: true,
       },
     );
-    return { status: 'success' };
+    return { status: true };
   }
 }

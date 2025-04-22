@@ -21,9 +21,6 @@ import { Grammar, GrammarSchema } from './schemas/grammar.schema';
 import { GrammarController } from './controllers/grammar.controller';
 import { LessonService } from './services/courses/language/lesson.service';
 import { LessonController } from './controllers/lesson.controller';
-import { Progress, ProgressSchema } from './schemas/progress.schema';
-import { ProgressService } from './services/courses/language/progress.service';
-import { ProgressRepository } from './repositories/progress.repository';
 import { WordUserService } from './services/courses/language/word-user.service';
 import { WordUser, WordUserSchema } from './schemas/word-user.schema';
 import { WordUserRepository } from './repositories/word-user.repository';
@@ -33,11 +30,13 @@ import { PlanRepository } from './repositories/plan.repository';
 import { PlanController } from './controllers/plan.controller';
 import { CourseService } from './services/courses/course.service';
 import {
-  LanguageCource,
-  LanguageCourceSchema,
+  LanguageCourse,
+  LanguageCourseSchema,
 } from './schemas/language/language-course.schema';
 import { CoursesController } from './controllers/courses.controller';
 import { UserService } from './services/user.service';
+import { Lesson, LessonSchema } from './schemas/lesson.schema';
+import { LessonRepository } from './repositories/lesson.repository';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -56,10 +55,10 @@ import { UserService } from './services/user.service';
       { name: User.name, schema: UserSchema },
       { name: Word.name, schema: WordSchema },
       { name: Grammar.name, schema: GrammarSchema },
-      { name: Progress.name, schema: ProgressSchema },
       { name: WordUser.name, schema: WordUserSchema },
       { name: Plan.name, schema: PlanSchema },
-      { name: LanguageCource.name, schema: LanguageCourceSchema },
+      { name: LanguageCourse.name, schema: LanguageCourseSchema },
+      { name: Lesson.name, schema: LessonSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -86,7 +85,6 @@ import { UserService } from './services/user.service';
     PlanService,
     WordService,
     LessonService,
-    ProgressService,
     GrammarService,
     TranslatorService,
     UserService,
@@ -96,7 +94,7 @@ import { UserService } from './services/user.service';
     WordUserRepository,
     UserRepository,
     GrammarRepository,
-    ProgressRepository,
+    LessonRepository,
     PlanRepository,
   ],
 })
