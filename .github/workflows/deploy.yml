@@ -40,6 +40,15 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            # Create application directory if it doesn't exist
+            mkdir -p /root/hive-backend
+
+            # Check if .env file exists
+            if [ ! -f /root/hive-backend/.env ]; then
+              echo "Error: .env file not found at /opt/hive-backend/.env. Please create it first."
+              exit 1
+            fi
+
             # Pull the latest image
             docker pull ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
 
@@ -52,5 +61,5 @@ jobs:
               --name api \
               --restart unless-stopped \
               -p 1000:1000 \
-              --env-file .env \
+              --env-file /root/hive-backend/.env \
               ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
