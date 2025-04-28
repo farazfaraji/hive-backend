@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: api
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_ORGANIZATION
+        sync: false
+      - key: SEND_EMAIL_API
+        sync: false
+      - key: SEND_EMAIL_PASS
+        sync: false
