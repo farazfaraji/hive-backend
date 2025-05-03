@@ -14,6 +14,18 @@ import { LessonRepository } from 'src/repositories/lesson.repository';
 import { v4 as uuidv4 } from 'uuid';
 import { UserService } from 'src/services/user.service';
 import { LanguageProgress } from 'src/schemas/user.schema';
+import { LanguageArticleService } from './language-article.service';
+import { LanguagePlan } from 'src/constants/plans.constant';
+export type GrammarResponse = {
+  title: string;
+  grammer: string;
+  examples: string[];
+  fill_in_blank: { text: string; answer: string; hint: string }[];
+  multiple_choice: { text: string; choices: string[]; answer: string }[];
+  cost: string;
+  article: { subject: string; pages: string[] };
+};
+
 export type CorrectionReading = {
   advices: string[];
   score: number;
@@ -46,15 +58,17 @@ export class LessonService extends AbstractService<Lesson, LessonDocument> {
     private readonly courseService: CourseService,
     private readonly planService: PlanService,
     private readonly userService: UserService,
+    private readonly languageArticleService: LanguageArticleService,
     private readonly repository: LessonRepository,
   ) {
     super(repository.getTarget());
   }
 
   async getLesson(user: UserProfileModel) {
-    const lesson = await this.findOne({ user: user._id });
-
-    const plan = await this.planService.findOne({ user: user._id });
+    const [lesson, plan] = await Promise.all([
+      this.findOne({ user: user._id }),
+      this.planService.findOne({ user: user._id }),
+    ]);
 
     const currentPlanDetail = plan.detail.plans[plan.detail.current];
 
@@ -85,70 +99,70 @@ export class LessonService extends AbstractService<Lesson, LessonDocument> {
       return this.getLesson(user);
     }
 
-    const prompts = await this.getPrompt(
+    const data = await this.generateLesson(
       user,
       currentPlanDetail.name,
       currentPlanDetail.detail,
       languageCourse,
     );
 
-    let data = {};
-
-    for (const prompt of prompts) {
-      const response = await this.translatorService.sendPrompt<object>(prompt);
-      data = { ...data, ...response };
-    }
-
     await this.upsert({ user: user._id }, { lesson: data });
 
     return this.getLesson(user);
   }
 
-  async getPrompt(
+  async generateLesson(
     user: UserProfileModel,
-    planName: string,
+    planName: LanguagePlan,
     detail: string[],
     languageCourse: LanguageCourse,
-  ): Promise<string[]> {
+  ) {
     const toReturn = [];
+
     switch (planName) {
-      case 'grammar':
+      case LanguagePlan.Grammar:
         const progress = await this.userService.getProgress<LanguageProgress>(
           user,
           Course.Language,
         );
 
-        const grammer = await this.grammarService.findOne({
+        const grammar = await this.grammarService.findOne({
           index: progress.grammarIndex,
         });
 
-        if (!grammer) {
+        if (!grammar) {
           throw new Error('Grammer not found');
         }
 
         toReturn.push(`You're a language tutor.Language: ${languageCourse.targetLanguage}.Level: ${languageCourse.level}.
-        can you explain this grammer: ${grammer.item}. and give me 5 examples and 5 in fill the blank questions to force me to use the grammer.
+        can you explain this grammer: ${grammar.item}. and give me 5 examples and 5 in fill the blank questions to force me to use the grammer.
         for fill the blank questions, show the blank part by <blank>.show the normal form of the answer by <verb>verb</verb> at the end of the sentence.
         also 5 questions to force me to use the grammer in multiple choice. Response in JSON:
-        {"title":"title of the grammer","grammar": "explanation", "examples": ["example1"], "fill_in_blank": [{text:"question",answer:"answer"}],"multiple_choice": [{text:"question",choices:["choice1"],answer:"answer"}]`);
-        toReturn.push(`You're a language tutor.Language: ${languageCourse.targetLanguage}.Level: ${languageCourse.level}.I'm learning this grammer: ${grammer.item}.
-        Im interested in this subjects: ${languageCourse.interests.join(',')}.give me an article to read and using this grammer in the article in 15 lines in 3 pages. use <bold>{used_word}</bold> that places which this grammer is used.
-        Response in JSON:
-        {"article": {subject:"article subject",pages:["page1","page2","page3"]}}`);
-        break;
+        {"title":"title of the grammer","grammar": "explanation", "examples": ["example1"], "fill_in_blank": [{text:"question",answer:"correct answer","hint":"simple hint close to the answer"}],"multiple_choice": [{text:"question",choices:["choice1"],answer:"answer"}],"cost":"cost of this text generation in usd`);
+        let data = {};
+
+        for (const prompt of toReturn) {
+          const response =
+            await this.translatorService.sendPrompt<object>(prompt);
+          data = { ...data, ...response };
+        }
+
+        const article = await this.languageArticleService.getGrammarArticle(
+          languageCourse,
+          grammar,
+        );
+        data = {
+          ...data,
+          ...{ article: { subject: article.subject, pages: article.content } },
+        };
+        return data as GrammarResponse;
     }
-    return toReturn;
   }
 
   async finishLesson(user: UserProfileModel) {
+    const lesson = await this.findOne({ user: user._id });
     await this.updateOne({ user: user._id }, { lesson: null });
-    const plan = await this.planService.findOne({ user: user._id });
-    await this.planService.updateOne(
-      { user: user._id },
-      {
-        [`detail.plans.${plan.detail.current}.isPassed`]: true,
-      },
-    );
+    await this.planService.finishPlan(user, lesson);
     return { status: true };
   }
 }

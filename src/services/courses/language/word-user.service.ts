@@ -74,6 +74,7 @@ export class WordUserService extends AbstractService<
 
     const numberOfTry = wordUser.numberOfTry + 1;
     const nextTry = this.calculateNextTry(numberOfTry);
+    //@todo this number should be dynamic
     const isLearned = numberOfTry >= 20;
 
     await this.updateOne(

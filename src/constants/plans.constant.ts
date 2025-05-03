@@ -1,16 +1,26 @@
 import { Course } from 'src/schemas/language/language-course.schema';
 
+export enum LanguagePlan {
+  Grammar = 'grammar',
+  Vocabulary = 'vocabulary',
+  Reading = 'reading',
+  Writing = 'writing',
+  Listening = 'listening',
+  Speaking = 'speaking',
+  Conversation = 'conversation',
+}
+
 export const Plans = [
   {
     course: Course.Language,
     plans: [
-      'grammar',
-      'vocabulary',
-      'reading',
-      'writing',
-      'listening',
-      'speaking',
-      'conversation',
+      LanguagePlan.Grammar,
+      LanguagePlan.Vocabulary,
+      LanguagePlan.Reading,
+      LanguagePlan.Writing,
+      LanguagePlan.Listening,
+      LanguagePlan.Speaking,
+      LanguagePlan.Conversation,
     ],
   },
 ];

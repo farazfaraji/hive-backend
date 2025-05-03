@@ -1,6 +1,6 @@
 docker run -d \
               --name api \
               --restart unless-stopped \
-              -p 1000:1000 \
+              -p 3000:3000 \
               --env-file /root/hive-backend/.env \
-              farazfaraji/hive-backend:941999e908309af504f8b57e8a7f004dff46f228
+              farazfaraji/hive-backend:latest

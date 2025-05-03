@@ -17,7 +17,6 @@ import { WordRepository } from './repositories/word.repository';
 import { TranslatorService } from './services/translator.service';
 import { GrammarService } from './services/courses/language/grammar.service';
 import { GrammarRepository } from './repositories/grammar.repository';
-import { Grammar, GrammarSchema } from './schemas/grammar.schema';
 import { GrammarController } from './controllers/grammar.controller';
 import { LessonService } from './services/courses/language/lesson.service';
 import { LessonController } from './controllers/lesson.controller';
@@ -37,6 +36,14 @@ import { CoursesController } from './controllers/courses.controller';
 import { UserService } from './services/user.service';
 import { Lesson, LessonSchema } from './schemas/lesson.schema';
 import { LessonRepository } from './repositories/lesson.repository';
+import { Grammar, GrammarSchema } from './schemas/grammar.schema';
+import {
+  LanguageArticle,
+  LanguageArticleSchema,
+} from './schemas/language/language-article.schema';
+import { LanguageArticleService } from './services/courses/language/language-article.service';
+import { LanguageArticleRepository } from './repositories/language-article.repository';
+import { LanguageArticleController } from './controllers/language/language-article.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -59,6 +66,7 @@ import { LessonRepository } from './repositories/lesson.repository';
       { name: Plan.name, schema: PlanSchema },
       { name: LanguageCourse.name, schema: LanguageCourseSchema },
       { name: Lesson.name, schema: LessonSchema },
+      { name: LanguageArticle.name, schema: LanguageArticleSchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -77,6 +85,7 @@ import { LessonRepository } from './repositories/lesson.repository';
     GrammarController,
     PlanController,
     CoursesController,
+    LanguageArticleController,
   ],
   providers: [
     AppService,
@@ -90,12 +99,14 @@ import { LessonRepository } from './repositories/lesson.repository';
     UserService,
     CourseService,
     WordUserService,
+    LanguageArticleService,
     WordRepository,
     WordUserRepository,
     UserRepository,
     GrammarRepository,
     LessonRepository,
     PlanRepository,
+    LanguageArticleRepository,
   ],
 })
 export class AppModule {}

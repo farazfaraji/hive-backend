@@ -26,8 +26,13 @@ export class WordService extends AbstractService<Word, WordDocument> {
     if (!languageCourse) {
       throw new Error('Language course not found');
     }
+
+    const trimmedWord = word.word
+      .trim()
+      .replace(/^[^a-zA-Z]+|[^a-zA-Z]+$/g, '');
     const res = await this.insertIfNotExist(['word'], {
       ...word,
+      word: trimmedWord,
       language: languageCourse.targetLanguage,
       uniqueId: uuidv4(),
     });
@@ -120,4 +125,6 @@ export class WordService extends AbstractService<Word, WordDocument> {
     const fifteenMinutesLater = new Date(Date.now() + 15 * 60 * 1000);
     await this.wordUserService.tryLater(user, wordId, fifteenMinutesLater);
   }
+
+  async translateWord(user: UserProfileModel, word: string) {}
 }

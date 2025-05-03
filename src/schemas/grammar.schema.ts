@@ -5,10 +5,25 @@ import { Language } from './word.schema';
 
 export type GrammarDocument = HydratedDocument<Grammar>;
 
-export interface Definition {
-  id: string;
-  explanation: string;
-}
+export type Definition = {
+  [key: string]: {
+    [key in Language]?: {
+      definition: string;
+      examples: string;
+      fillInBlank: {
+        question: string;
+        answer: string;
+      };
+      multipleChoice: {
+        question: string;
+        answer: string;
+      };
+      article: {
+        [key: string]: string[];
+      };
+    };
+  };
+};
 
 @Schema({ collection: 'grammars' })
 export class Grammar extends SchemaBase {
@@ -24,8 +39,8 @@ export class Grammar extends SchemaBase {
   @Prop({ required: true })
   index: number;
 
-  @Prop({ type: [String], default: [], required: false })
-  definition?: string[];
+  @Prop({ type: Object, default: {}, required: false })
+  definition?: Definition;
 }
 
 export const GrammarSchema = SchemaFactory.createForClass(Grammar);

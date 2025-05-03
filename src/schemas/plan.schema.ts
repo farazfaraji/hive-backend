@@ -2,11 +2,12 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { SchemaBase } from 'src/abstracts/schema.abstract';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 import { Course } from './language/language-course.schema';
+import { LanguagePlan } from 'src/constants/plans.constant';
 
 export type PlanDocument = HydratedDocument<Plan>;
 
 export type PlanItem = {
-  name: string;
+  name: LanguagePlan;
   detail: string[];
   isPassed: boolean;
   score: number;

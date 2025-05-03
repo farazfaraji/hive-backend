@@ -15,7 +15,7 @@ async function bootstrap() {
   });
 
   // Get port from environment variable
-  const port = process.env.PORT || 3000; // App Engine uses port 8080 by default
+  const port = process.env.PORT || 3000;
 
   // Listen on all network interfaces
   await app.listen(port);

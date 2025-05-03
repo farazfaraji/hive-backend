@@ -4,7 +4,7 @@ import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 import { Language } from '../word.schema';
 import { Interests } from 'src/constants/courses.constant';
 
-export type LanguageCourceDocument = HydratedDocument<LanguageCourse>;
+export type LanguageCourseDocument = HydratedDocument<LanguageCourse>;
 
 export enum Course {
   'Language' = 'Language',

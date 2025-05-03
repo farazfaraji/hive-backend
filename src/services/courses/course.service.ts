@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import {
   Course,
   LanguageCourse,
-  LanguageCourceDocument,
+  LanguageCourseDocument,
 } from 'src/schemas/language/language-course.schema';
 import { UserProfileModel } from '../auth.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,7 +17,7 @@ import { PlanService } from '../plan.service';
 export class CourseService {
   constructor(
     @InjectModel(LanguageCourse.name)
-    public model: Model<LanguageCourceDocument>,
+    public model: Model<LanguageCourseDocument>,
     private readonly userService: UserService,
     private readonly planService: PlanService,
   ) {}

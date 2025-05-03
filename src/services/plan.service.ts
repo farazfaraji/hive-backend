@@ -2,7 +2,11 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PlanRepository } from 'src/repositories/plan.repository';
 import { PlanDocument, Plan, PlanItem } from 'src/schemas/plan.schema';
 import { UserProfileModel } from './auth.service';
-import { ConversationPlans, Plans } from 'src/constants/plans.constant';
+import {
+  ConversationPlans,
+  Plans,
+  LanguagePlan,
+} from 'src/constants/plans.constant';
 import { PlanDetail } from 'src/schemas/plan.schema';
 import { AbstractService } from 'src/abstracts/service.abstract';
 import { v4 as uuidv4 } from 'uuid';
@@ -46,6 +50,18 @@ export class PlanService extends AbstractService<Plan, PlanDocument> {
     });
   }
 
+  async finishPlan(user: UserProfileModel, plan: any) {
+    await this.repository.model.updateOne(
+      { user: user._id },
+      {
+        $push: {
+          passedPlans: { ...plan, ...{ lastReview: null, reviews: 0 } },
+        },
+        $set: { [`detail.plans.${plan.detail.current}.isPassed`]: true },
+      },
+    );
+  }
+
   private getRandomUniqueItem(array: string[], exclude: string[]): PlanItem {
     const availableItems = array.filter((item) => !exclude.includes(item));
     const randomIndex = Math.floor(Math.random() * availableItems.length);
@@ -53,12 +69,17 @@ export class PlanService extends AbstractService<Plan, PlanDocument> {
     if (plan === 'conversation') {
       const randomIndex = Math.floor(Math.random() * ConversationPlans.length);
       return {
-        name: ConversationPlans[randomIndex],
+        name: ConversationPlans[randomIndex] as LanguagePlan,
         detail: [ConversationPlans[randomIndex]],
         isPassed: false,
         score: 0,
       };
     }
-    return { name: plan, detail: [], isPassed: false, score: 0 };
+    return {
+      name: plan as LanguagePlan,
+      detail: [],
+      isPassed: false,
+      score: 0,
+    };
   }
 }
